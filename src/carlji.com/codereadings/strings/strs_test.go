@@ -26,6 +26,7 @@ type FieldTest struct {
 var FiledsFuncTest = []FieldTest{
 	{"", []string{}},
 	{"ABCDABCD", []string{"BCD", "BCD"}},
+	{"ABCDABCDA", []string{"BCD", "BCD"}},
 	{"BCDE", []string{"BCDE"}},
 }
 

@@ -35,13 +35,16 @@ func FieldsFunc(s string, f func(rune) bool) []string {
 		if f(char) {
 			if start >= 0 {
 				res[i] = s[start:index]
+				i++
+				start = -1
 			}
+		} else if start == -1 {
+			start = index
 		}
-		start = index
 	}
 
-	if i == 0 && start == len(s) {
-		res[i] = s
+	if start >= 0 {
+		res[i] = s[start:]
 	}
 
 	return res
