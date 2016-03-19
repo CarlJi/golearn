@@ -1,22 +1,35 @@
 package main
 
-import (
-	"fmt"
-	"strings"
-)
+import "fmt"
 
 func main() {
+	//strings.Map()
 
-	s := "ABCDEFGABCDEFGF"
-	res := strings.FieldsFunc(s, isSplict)
+	//strconv.ParseBool()
 
-	fmt.Printf("Result: %v ", res)
+	//regexp.Match()
+
+	//fmt.Printf("Result: %v ", res)
+
+	counterA := createCounter(2)
+	counterB := createCounter(102)
+
+	for i := 0; i < 5; i++ {
+		a := <-counterA
+		fmt.Printf("(A->%d, B->%d)", a, <-counterB)
+	}
+
+	fmt.Println()
 }
 
-func isSplict(char rune) bool {
-	switch char {
-	case 'B', 'F':
-		return true
-	}
-	return false
+func createCounter(start int) chan int {
+	next := make(chan int)
+	go func(i int) {
+		for {
+			next <- i
+			i++
+		}
+	}(start)
+
+	return next
 }

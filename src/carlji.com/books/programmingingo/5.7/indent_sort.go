@@ -7,14 +7,14 @@ import (
 )
 
 func main() {
-	fmt.Println("|   Original   |   Sorted   |")
-	fmt.Println("|--------------|------------|")
+	fmt.Println("|   Original   |   Sorted     |")
+	fmt.Println("|--------------|--------------|")
 
-	original := []string{"abc", " bcd", "  cd", " bd", " bf", "  cbf", "   cbg"}
+	original := []string{"abc", " bgd", "  ci", " bd", " bf", "  cbf", "   abc", "   cbg"}
 
 	sorted := SortedIndentStrings(original)
 	for i, _ := range sorted {
-		fmt.Printf("|%-19s|%-19s|\n", original[i], sorted[i])
+		fmt.Printf("|%-14s|%-14s|\n", original[i], sorted[i])
 	}
 }
 
@@ -58,12 +58,12 @@ func populateEntries(s []string) Entries {
 }
 
 func computeIndent(s []string) (string, int) {
-	for _, item := range s {
+	for j, item := range s {
 		if len(item) > 0 && (item[0] == ' ' || item[0] == '\t') {
 			whitespace := rune(item[0])
 			for i, char := range item[1:] {
 				if char != whitespace {
-					return strings.Repeat(string(whitespace), i), i
+					return strings.Repeat(string(whitespace), j+i), j + i
 				}
 			}
 		}
