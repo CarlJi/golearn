@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"regexp"
 	"runtime"
 )
@@ -24,5 +23,9 @@ func main() {
 var workers = runtime.NumCPU()
 
 func grep(lineRx *regexp.Regexp, filenames []string) {
-	fmt.Println("Num of CPU", workers)
+	jobs := make(chan Job, workers)
+	results := make(chan Result, 1000)
+	done := make(chan struct{}, workers)
+
+
 }
