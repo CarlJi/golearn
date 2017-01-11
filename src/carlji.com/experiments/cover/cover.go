@@ -57,7 +57,6 @@ func calcFile(coverfile string) map[string]float64 {
 	for scanner.Scan() {
 		oneLine := scanner.Text()
 		ss := strings.FieldsFunc(oneLine, split)
-		fmt.Println(len(ss))
 		if len(ss) > 3 {
 			endLine, err := strconv.ParseFloat(ss[2], 64)
 			if err != nil {
