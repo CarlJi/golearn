@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -18,7 +20,7 @@ type Scenario struct {
 var s1 = &Scenario{
 	Name: "s1",
 	Description: []string{
-		"无脑并发执行任务",
+		"简单并发执行任务",
 	},
 	Examples: []string{
 		"比如并发的请求后端某个接口",
@@ -29,7 +31,7 @@ var s1 = &Scenario{
 var s2 = &Scenario{
 	Name: "s2",
 	Description: []string{
-		"按数量并行执行任务, goroutine worker pool",
+		"基于大数据量的并发任务模型, goroutine worker pool",
 	},
 	Examples: []string{
 		"比如技术支持要给某个客户删除几个TB/GB的文件",
@@ -40,12 +42,34 @@ var s2 = &Scenario{
 var s3 = &Scenario{
 	Name: "s3",
 	Description: []string{
-		"按时间来持续并发",
+		"持续一定时间的高并发模型",
 	},
 	Examples: []string{
 		"在规定时间内，持续的高并发请求后端服务， 防止服务死循环",
 	},
 	RunExample: RunScenario3,
+}
+
+var s4 = &Scenario{
+	Name: "s4",
+	Description: []string{
+		"等待异步任务执行结果(goroutine+select+channel)",
+	},
+	Examples: []string{
+		"",
+	},
+	RunExample: RunScenario4,
+}
+
+var s5 = &Scenario{
+	Name: "s5",
+	Description: []string{
+		"定时的反馈结果(Ticker)",
+	},
+	Examples: []string{
+		"比如测试上传接口的性能，要实时给出指标: 吞吐率，IOPS,成功率等",
+	},
+	RunExample: RunScenario5,
 }
 
 var Scenarios []*Scenario
@@ -54,6 +78,8 @@ func init() {
 	Scenarios = append(Scenarios, s1)
 	Scenarios = append(Scenarios, s2)
 	Scenarios = append(Scenarios, s3)
+	Scenarios = append(Scenarios, s4)
+	Scenarios = append(Scenarios, s5)
 }
 
 // 常用的并发与同步场景
@@ -89,9 +115,17 @@ func matchScenario(name string) *Scenario {
 	return nil
 }
 
-var doSomething = func(i int) {
-	fmt.Printf("Goroutine %d do things .... \n", i)
+var doSomething = func(i int) string {
 	time.Sleep(time.Millisecond * time.Duration(10))
+	fmt.Printf("Goroutine %d do things .... \n", i)
+	return fmt.Sprintf("Goroutine %d", i)
+}
+
+var takeSomthing = func(res string) string {
+	time.Sleep(time.Millisecond * time.Duration(10))
+	tmp := fmt.Sprintf("Take result from %s.... \n", res)
+	fmt.Println(tmp)
+	return tmp
 }
 
 // 场景1: 按数量，并发做事/发送请求
@@ -182,7 +216,7 @@ func RunScenario3() {
 		for {
 			<-concurrentCount
 			go func() {
-				// do something
+				doSomething(rand.Intn(n))
 				done <- struct{}{}
 			}()
 		}
@@ -191,32 +225,102 @@ func RunScenario3() {
 	<-waitForAll
 }
 
-// 场景4: Goroutine 间的等待与同步
+// 场景4: 等待异步任务执行结果(goroutine+select+channel)
 
-func scenario4() {
+func RunScenario4() {
+	sth := make(chan string)
+	result := make(chan string)
 	go func() {
-
+		id := rand.Intn(100)
+		for {
+			sth <- doSomething(id)
+		}
+	}()
+	go func() {
+		for {
+			result <- takeSomthing(<-sth)
+		}
 	}()
 
-	go func() {
-
-	}()
+	select {
+	case c := <-result:
+		fmt.Printf("Got result %s ", c)
+	case <-time.After(time.Duration(30 * time.Second)):
+		fmt.Errorf("指定时间内都没有得到结果")
+	}
 }
 
-//
-
-// 场景5： 在规定时间被等待一个异步Gotoutine返回结果
-
-func scenario5() {
-	go func() {
-
-	}()
-
-	select {}
+var doUploadMock = func() bool {
+	time.Sleep(time.Millisecond * time.Duration(100))
+	n := rand.Intn(100)
+	if n > 50 {
+		return true
+	} else {
+		return false
+	}
 }
 
-// 场景6： 在规定的时间内定时做事情
+// 场景5: 定时的反馈结果(Ticker)
+// 测试上传接口的性能，要实时给出指标: 吞吐率，IOPS,成功率等
 
-func scenario6() {
+func RunScenario5() {
+	totalSize := int64(0)
+	totalCount := int64(0)
+	totalErr := int64(0)
 
+	concurrencyCount := runtime.NumCPU()
+	stop := make(chan struct{})
+	fileSizeExample := int64(10)
+
+	timeout := 10 // seconds to stop
+
+	go func() {
+		for i := 0; i < concurrencyCount; i++ {
+			go func(index int) {
+				for {
+					select {
+					case <-stop:
+						return
+					default:
+						break
+					}
+
+					res := doUploadMock()
+
+					if res {
+						atomic.AddInt64(&totalCount, 1)
+						atomic.AddInt64(&totalSize, fileSizeExample)
+					} else {
+						atomic.AddInt64(&totalErr, 1)
+					}
+				}
+			}(i)
+		}
+	}()
+
+	oldSize := int64(0)
+	oldCount := int64(0)
+	oldErr := int64(0)
+
+	t := time.NewTicker(time.Second)
+	index := 0
+	for {
+		select {
+		case <-t.C:
+			index++
+			tmpSize := atomic.LoadInt64(&totalSize)
+			tmpCount := atomic.LoadInt64(&totalCount)
+			tmpErr := atomic.LoadInt64(&totalErr)
+			fmt.Printf("吞吐率: %d，IOPS: %d , 成功率: %d \n", tmpSize-oldSize, tmpCount-oldCount, tmpErr-oldErr)
+			oldErr = tmpErr
+			oldSize = tmpSize
+			oldCount = tmpCount
+			if index > timeout {
+				t.Stop()
+				close(stop)
+				return
+			}
+		}
+
+	}
 }
