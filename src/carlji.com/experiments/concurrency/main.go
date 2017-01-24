@@ -135,7 +135,7 @@ var takeSomthing = func(res string) string {
 // 场景1: 简单并发任务
 
 func RunScenario1() {
-	count := 6000
+	count := 10
 	var wg sync.WaitGroup
 
 	for i := 0; i < count; i++ {
