@@ -31,10 +31,10 @@ var s1 = &Scenario{
 var s2 = &Scenario{
 	Name: "s2",
 	Description: []string{
-		"基于大数据量的并发任务模型, goroutine worker pool",
+		"持续一定时间的高并发模型",
 	},
 	Examples: []string{
-		"比如技术支持要给某个客户删除几个TB/GB的文件",
+		"在规定时间内，持续的高并发请求后端服务， 防止服务死循环",
 	},
 	RunExample: RunScenario2,
 }
@@ -42,10 +42,10 @@ var s2 = &Scenario{
 var s3 = &Scenario{
 	Name: "s3",
 	Description: []string{
-		"持续一定时间的高并发模型",
+		"基于大数据量的并发任务模型, goroutine worker pool",
 	},
 	Examples: []string{
-		"在规定时间内，持续的高并发请求后端服务， 防止服务死循环",
+		"比如技术支持要给某个客户删除几个TB/GB的文件",
 	},
 	RunExample: RunScenario3,
 }
@@ -85,7 +85,11 @@ func init() {
 // 常用的并发与同步场景
 func main() {
 	if len(os.Args) == 1 {
-		fmt.Println("=============>")
+		fmt.Println("请选择使用场景 ==> ")
+		for _, sc := range Scenarios {
+			fmt.Printf("场景: %s ,", sc.Name)
+			printDescription(sc.Description)
+		}
 		return
 	}
 	for _, arg := range os.Args[1:] {
@@ -128,10 +132,10 @@ var takeSomthing = func(res string) string {
 	return tmp
 }
 
-// 场景1: 按数量，并发做事/发送请求
+// 场景1: 简单并发任务
 
 func RunScenario1() {
-	count := 10
+	count := 6000
 	var wg sync.WaitGroup
 
 	for i := 0; i < count; i++ {
@@ -145,9 +149,45 @@ func RunScenario1() {
 	wg.Wait()
 }
 
-// 场景2：以 worker pool 方式 并发做事/发送请求
+// 场景2: 按时间来持续并发
 
 func RunScenario2() {
+	timeout := time.Now().Add(time.Second * time.Duration(10))
+	n := runtime.NumCPU()
+
+	waitForAll := make(chan struct{})
+	done := make(chan struct{})
+	concurrentCount := make(chan struct{}, n)
+
+	for i := 0; i < n; i++ {
+		concurrentCount <- struct{}{}
+	}
+
+	go func() {
+		for time.Now().Before(timeout) {
+			<-done
+			concurrentCount <- struct{}{}
+		}
+
+		waitForAll <- struct{}{}
+	}()
+
+	go func() {
+		for {
+			<-concurrentCount
+			go func() {
+				doSomething(rand.Intn(n))
+				done <- struct{}{}
+			}()
+		}
+	}()
+
+	<-waitForAll
+}
+
+// 场景3：以 worker pool 方式 并发做事/发送请求
+
+func RunScenario3() {
 	numOfConcurrency := runtime.NumCPU()
 	taskTool := 10
 	jobs := make(chan int, taskTool)
@@ -189,42 +229,6 @@ func RunScenario2() {
 	wg.Wait()
 }
 
-// 场景3: 按时间来持续并发
-
-func RunScenario3() {
-	timeout := time.Now().Add(time.Second * time.Duration(10))
-	n := runtime.NumCPU()
-
-	waitForAll := make(chan struct{})
-	done := make(chan struct{})
-	concurrentCount := make(chan struct{}, n)
-
-	for i := 0; i < n; i++ {
-		concurrentCount <- struct{}{}
-	}
-
-	go func() {
-		for time.Now().Before(timeout) {
-			<-done
-			concurrentCount <- struct{}{}
-		}
-
-		waitForAll <- struct{}{}
-	}()
-
-	go func() {
-		for {
-			<-concurrentCount
-			go func() {
-				doSomething(rand.Intn(n))
-				done <- struct{}{}
-			}()
-		}
-	}()
-
-	<-waitForAll
-}
-
 // 场景4: 等待异步任务执行结果(goroutine+select+channel)
 
 func RunScenario4() {
@@ -261,7 +265,7 @@ var doUploadMock = func() bool {
 }
 
 // 场景5: 定时的反馈结果(Ticker)
-// 测试上传接口的性能，要实时给出指标: 吞吐率，IOPS,成功率等
+// 测试上传接口的性能，要实时给出指标: 吞吐率，成功率等
 
 func RunScenario5() {
 	totalSize := int64(0)
@@ -286,7 +290,6 @@ func RunScenario5() {
 					}
 
 					res := doUploadMock()
-
 					if res {
 						atomic.AddInt64(&totalCount, 1)
 						atomic.AddInt64(&totalSize, fileSizeExample)
@@ -298,23 +301,16 @@ func RunScenario5() {
 		}
 	}()
 
-	oldSize := int64(0)
-	oldCount := int64(0)
-	oldErr := int64(0)
-
 	t := time.NewTicker(time.Second)
 	index := 0
 	for {
 		select {
 		case <-t.C:
 			index++
-			tmpSize := atomic.LoadInt64(&totalSize)
 			tmpCount := atomic.LoadInt64(&totalCount)
+			tmpSize := atomic.LoadInt64(&totalSize)
 			tmpErr := atomic.LoadInt64(&totalErr)
-			fmt.Printf("吞吐率: %d，IOPS: %d , 成功率: %d \n", tmpSize-oldSize, tmpCount-oldCount, tmpErr-oldErr)
-			oldErr = tmpErr
-			oldSize = tmpSize
-			oldCount = tmpCount
+			fmt.Printf("吞吐率: %d，成功率: %d \n", tmpSize/int64(index), tmpCount*100/(tmpCount+tmpErr))
 			if index > timeout {
 				t.Stop()
 				close(stop)
