@@ -27,5 +27,4 @@ func grep(lineRx *regexp.Regexp, filenames []string) {
 	results := make(chan Result, 1000)
 	done := make(chan struct{}, workers)
 
-
 }
