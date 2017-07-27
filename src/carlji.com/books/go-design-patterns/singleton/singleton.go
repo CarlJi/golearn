@@ -1,4 +1,4 @@
-package main
+package singleton
 
 type singleton struct {
 	count int
@@ -11,4 +11,9 @@ func GetInstance() *singleton {
 		instance = new(singleton)
 	}
 	return instance
+}
+
+func (s *singleton) AddOne() int {
+	s.count += 1
+	return s.count
 }
