@@ -1,6 +1,6 @@
 ## 前言
 
-Kubernetes的成功少不了大量工程师的共同参与，而他们之间如何高效的协作的，非常值得我们探究。最近看了他们的e2e测试和框架，还是挺有启发的。
+Kubernetes的成功少不了大量工程师的共同参与，而他们之间如何高效的协作，非常值得我们探究。最近看了他们的e2e测试和框架，还是挺有启发的。
 
 ## 怎样才是好的e2e测试？
 
@@ -21,14 +21,12 @@ Kubernetes默认将测试用例分为下面几类，需要开发者在实际开�
 
 - 没标签的，默认测试用例是稳定的，支持并发，且运行足够快的
 - [Slow] 执行比较慢的用例.(对于具体的时间阈值，Kubernetes不同的文档表示不一致，此处需要修复)
-- [Serial] 不支持并发的测试用例，比如占用太多资源，还比如需要重启Nodes的
-- [Disruptive] 会导致其他测试用例失败或者被破坏的测试用例
-- [Flaky] 不稳定的用例，且很难修复。使用它要非常慎重，因为常规CI job并不会运行这些测试用例
-- [Feature:.+] 围绕特定非默认Kubernetes集群功能或者非核心功能的测试用例
+- [Serial] 不支持并发的测试用例，比如占用太多资源，还比如需要重启Node的
+- [Disruptive] 会导致其他测试用例失败或者具有破坏性的测试用例
+- [Flaky] 不稳定的用例，且很难修复。使用它要非常慎重，因为常规CI jobs并不会运行这些测试用例
+- [Feature:.+] 围绕特定非默认Kubernetes集群功能或者非核心功能的测试用例，方便开发以及专项功能适配
 
-有了这些标签，那么我们在实际使用时就可以灵活的选择我们要跑的测试用例了。
-
-比如针对任意Kubernetes集群,做Conformance验收测试，就可以通过下面的简单几步来执行：
+当然除了以上标签，还有个比较重要的标签就是[Conformance], 此标签用于验收Kubernetes集群最小功能集，已经是我们常说的MAT测试。所以如果你有个私有部署的集群，就可以通过这套用例来搞验收。方法也很简单，就通过下面几步就可以执行：
 
 ```
 # under kubernetes folder, compile test cases and ginkgo tool
@@ -45,7 +43,38 @@ go run hack/e2e.go -v --test --test_args="--ginkgo.focus=\[Conformance\]"
 
 ## Kubernetes e2e test framework
 
-上面说Kubernetes社区为了让开发者写的出的e2e能尽可能的遵循现有的一些规则，精心维护了一套测试框架，以及一些好用的Util类。
+研究Kubernetes的e2e测试框架,然后类比我们以往的经验，个人觉得，下面几点特性还是值得借鉴的:
+
+#### All e2e compile in one binary, 单一独立二进制
+
+使用ginkgo经常会走入一个误区，针对每个服务都简历一个suite，这样方便已服务级别来测试。
+
+flag使用以及想配置文件方式倾斜
+
+#### each case has a uniqe namespace
+
+涉及到，迟钝初始化相关，比较经典
+
+#### asynchonize wait
+
+
+
+#### suitable logs
+
+glog和logf
+
+
+
+#### clean code
+
+这点比较粗，其实围绕的核心是如何把代码写的更优美，这是个很大的话题，但是我们可以抽取一些显著的。
+
+- 抽象方法已突出测试用例主体
+- 数据驱动方式写测试
+
+
+
+#### 
 
 
 
