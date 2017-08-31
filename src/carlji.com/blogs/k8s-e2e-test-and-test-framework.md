@@ -1,3 +1,5 @@
+[TOC]
+
 ## 前言
 
 Kubernetes的成功少不了大量工程师的共同参与，而他们之间如何高效的协作，非常值得我们探究。最近看了他们的e2e测试和框架，还是挺有启发的。
@@ -45,46 +47,78 @@ go run hack/e2e.go -v --test --test_args="--ginkgo.focus=\[Conformance\]"
 
 研究Kubernetes的e2e测试框架,然后类比我们以往的经验，个人觉得，下面几点特性还是值得借鉴的:
 
-#### All e2e compile in one binary, 单一独立二进制
+#### All e2e compiled in one binary, 单一独立二进制
 
-使用ginkgo经常会走入一个误区，针对每个服务都简历一个suite，这样方便已服务级别来测试。
+在对服务端程序进行API测试时，我们经常会针对每个服务都创建一个ginkgo suite来框定测试用例的范围，这样做的好处是用例目标非常清晰，但是随着服务数量的增多，这样的suite会越来越来多。从组织上看起来就稍显杂乱，而且不利于测试服务的输出。
 
-flag使用以及想配置文件方式倾斜
+比如，我们考虑这么一个场景，需要对新机房，或者私有机房进行服务验证的时候，需要copy所有代码，非常的不方便，而且也容易造成代码泄露。
 
-#### each case has a uniqe namespace
+kubernetes显然也会有这个需求，所以他们改变写法，将所有的测试用例都编译进一个e2e.test的二进制，这样针对上面场景时，就可以直接使用这个可执行文件来操作，非常的方便。
 
-涉及到，迟钝初始化相关，比较经典
+当然可执行文件的方便少不了外部参数的自由注入，以及整体测试用例的精心标记。否则，测试代码写的不规范，需要频繁的针对特定环境修改，也是拒不方便的。
 
-#### asynchonize wait
+#### Each case has a uniqe namespace, 每个case拥有唯一的空间
 
+为每条测试用例都创建一个独立的空间，是kubernetes e2e framework的一大精华。每条测试用例独享一个空间，彼此不冲突，从而避免并发困扰，借助ginkgo的CLI，极大的提高了执行效率。
 
+而且这个加的方式非常优美，很有借鉴价值:
 
-#### suitable logs
+```
+func NewFramework(baseName string, options FrameworkOptions, client clientset.Interface) *Framework {
+   f := &Framework{
+      BaseName:                 baseName,
+      AddonResourceConstraints: make(map[string]ResourceConstraint),
+      Options:                  options,
+      ClientSet:                client,
+   }
 
-glog和logf
+   BeforeEach(f.BeforeEach)
+   AfterEach(f.AfterEach)
 
+   return f
+}
+```
 
+利用ginkgo 的BeforeEach的嵌套特定，虽然在Describe放下里就定义了，但是在每个It执行前，上面的BeforeEach才会真正执行，所以并不会有冲突:
 
-#### clean code
+```
+var _ = framework.KubeDescribe("GKE local SSD [Feature:GKELocalSSD]", func() {
+   f := framework.NewDefaultFramework("localssd")
+   It("should write and read from node local SSD [Feature:GKELocalSSD]", func() {
+   ...
+   })
+})
+```
 
-这点比较粗，其实围绕的核心是如何把代码写的更优美，这是个很大的话题，但是我们可以抽取一些显著的。
+当然e2e框架还负责case执行完的环境清理，并且是按需灵活配置。比如你希望，case失败保留现场,不删除namespace，可以在设置变量delete-namespace-on-failure为false就可以了。
 
-- 抽象方法已突出测试用例主体
-- 数据驱动方式写测试
+#### Asynchronous wait，异步等待
 
+几乎所有的Kubernetes操作都是异步的，所以不管是产品代码还是测试用例，都广泛的使用了这个异步等待库：kubernetes/vendor/k8s.io/apimachinery/pkg/util/wait。实现上简单，精悍，值得学习。
 
+不过，针对测试的异步验证，其实ginkgo(gomega)本身也提供了[Eventualy](http://onsi.github.io/gomega/#making-asynchronous-assertions)，也是非常好用的。
 
-#### 
+#### Suitable logs，打印合适的log
 
+Kubernetes e2e 主要使用两种方式输出log，一个是使用glog库，另一个则是framework.Logf方法。glog本身是golang官方提供的log库，使用比较灵活。但是这里主要推荐的还是Framework.Logf。因为使用此方法的log会输出到GinkgoWriter里面，这样当我们使用ginkgo.RunSpecsWithDefaultAndCustomReporters方法时，log不光输出到控制台，也会保存在junit格式的xml文件里，非常方便在jenkins里展示测试结果。
 
+#### Clean code, 测试代码也可以很干净，优美
+
+很多时候大家会觉得测试代码比较low，其实却不然。代码无所谓优劣，好坏还是依赖写代码的人。我想说，测试代码也是可以，并且应该写的很优美的。
+
+我们从Kubernetes e2e能看到很多好的借鉴，比如：
+
+- 抽取主干方法，以突出测试用例主体
+- 采用数据驱动方式书写共性测试用例
+- 注释工整，多少适宜
+- 不输出低级别log
+- 代码行长短适宜
 
 ## 普适性的Kubernetes e2e framework
 
 
 
-```
 
-```
 
 
 
