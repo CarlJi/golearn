@@ -26,7 +26,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/qiniu/log.v1"
+	"qiniupkg.com/x/log.v7"
 )
 
 // Break init loop.
@@ -35,8 +35,6 @@ func init() {
 }
 
 const testUsage = "test [build/test flags] [packages] [build/test flags & test binary flags]"
-
-const DebugFlag = "JICHANGJUN"
 
 var cmdTest = &Command{
 	CustomFlags: true,
@@ -423,6 +421,8 @@ func runTest(cmd *Command, args []string) {
 		fatalf("no packages to test")
 	}
 
+	log.Printf("packagesForBuild count: %d \n", len(pkgs))
+
 	if testC && len(pkgs) != 1 {
 		fatalf("cannot use -c flag with multiple packages")
 	}
@@ -457,12 +457,12 @@ func runTest(cmd *Command, args []string) {
 		(testShowPass && (len(pkgs) == 1 || buildP == 1))
 
 	// For 'go test -i -o x.test', we want to build x.test. Imply -c to make the logic easier.
+	log.Infof("buildI: %v, testO: %v\n", buildI, testO)
 	if buildI && testO != "" {
 		testC = true
 	}
 	var b builder
 	b.init()
-	log.Println("finish builder init")
 
 	if buildI {
 		buildV = testV
@@ -473,14 +473,18 @@ func runTest(cmd *Command, args []string) {
 		}
 
 		for _, p := range pkgs {
+			log.Infof("分析pkg, name: %s, dir: %s, importPath: %s \n", p.Name, p.Dir, p.ImportPath)
 			// Dependencies for each test.
 			for _, path := range p.Imports {
+				log.Infof("Imports Path: %s \n", path)
 				deps[path] = true
 			}
 			for _, path := range p.vendored(p.TestImports) {
+				log.Infof("TestImports Path: %s \n", path)
 				deps[path] = true
 			}
 			for _, path := range p.vendored(p.XTestImports) {
+				log.Infof("XTestImports Path: %s \n", path)
 				deps[path] = true
 			}
 		}
@@ -503,6 +507,8 @@ func runTest(cmd *Command, args []string) {
 			}
 		}
 		sort.Strings(all)
+
+		log.Infof("所有依赖包，排序后的列如下: %s \n", all)
 
 		a := &action{}
 		for _, p := range packagesForBuild(all) {

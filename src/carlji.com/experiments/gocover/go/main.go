@@ -179,7 +179,9 @@ func main() {
 			cmd.Flag.Usage = func() { cmd.Usage() }
 			if cmd.CustomFlags {
 				args = args[1:]
+				log.Printf("CustomFlags为true, 参数为: %v \n", args)
 			} else {
+				log.Printf("CustomFlags为flase, 所以直接parse flag，参数为: %v \n", args[1:])
 				cmd.Flag.Parse(args[1:])
 				args = cmd.Flag.Args()
 			}
