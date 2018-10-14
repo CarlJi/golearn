@@ -29,6 +29,8 @@ import (
 	"carlji.com/experiments/gocover/go1.10.2/pkg/cfg"
 	"carlji.com/experiments/gocover/go1.10.2/pkg/load"
 	"carlji.com/experiments/gocover/go1.10.2/pkg/str"
+
+	qlog "qiniupkg.com/x/log.v7"
 )
 
 // actionList returns the list of actions in the dag rooted at root
@@ -1301,6 +1303,7 @@ func (b *Builder) installHeader(a *Action) error {
 // cover runs, in effect,
 //	go tool cover -mode=b.coverMode -var="varName" -o dst.go src.go
 func (b *Builder) cover(a *Action, dst, src string, perm os.FileMode, varName string) error {
+	qlog.Printf("这里是cover runs 生效的地方，传入的参数: dst:%s, src:%s, var:%s", dst, src, varName)
 	return b.run(a, a.Objdir, "cover "+a.Package.ImportPath, nil,
 		cfg.BuildToolexec,
 		base.Tool("cover"),

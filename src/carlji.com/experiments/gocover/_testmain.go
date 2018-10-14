@@ -19,6 +19,8 @@ import (
 
 var tests = []testing.InternalTest{
 
+	{"TestC", _test.TestC},
+
 }
 
 var benchmarks = []testing.InternalBenchmark{

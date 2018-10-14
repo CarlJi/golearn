@@ -401,69 +401,288 @@ var testMainDeps = map[string]bool{
 	"os": true,
 }
 
+//func runTest(cmd *Command, args []string) {
+//	var pkgArgs []string
+//	pkgArgs, testArgs = testFlags(args)
+//
+//	log.Printf("pkgArgs: %s \n", pkgArgs)
+//	log.Printf("testArgs: %s \n", testArgs)
+//
+//	log.Printf("before findExecCmd output: %s \n", execCmd)
+//
+//	findExecCmd() // initialize cached result
+//
+//	log.Printf("findExecCmd output: %s \n", execCmd)
+//
+//	instrumentInit()
+//	buildModeInit()
+//	pkgs := packagesForBuild(pkgArgs)
+//	if len(pkgs) == 0 {
+//		fatalf("no packages to test")
+//	}
+//
+//	log.Printf("packagesForBuild count: %d \n", len(pkgs))
+//
+//	if testC && len(pkgs) != 1 {
+//		fatalf("cannot use -c flag with multiple packages")
+//	}
+//	if testO != "" && len(pkgs) != 1 {
+//		fatalf("cannot use -o flag with multiple packages")
+//	}
+//	if testProfile && len(pkgs) != 1 {
+//		fatalf("cannot use test profile flag with multiple packages")
+//	}
+//
+//	// If a test timeout was given and is parseable, set our kill timeout
+//	// to that timeout plus one minute. This is a backup alarm in case
+//	// the test wedges with a goroutine spinning and its background
+//	// timer does not get a chance to fire.
+//	if dt, err := time.ParseDuration(testTimeout); err == nil && dt > 0 {
+//		testKillTimeout = dt + 1*time.Minute
+//	}
+//
+//	// show passing test output (after buffering) with -v flag.
+//	// must buffer because tests are running in parallel, and
+//	// otherwise the output will get mixed.
+//	testShowPass = testV
+//
+//	// stream test output (no buffering) when no package has
+//	// been given on the command line (implicit current directory)
+//	// or when benchmarking.
+//	// Also stream if we're showing output anyway with a
+//	// single package under test or if parallelism is set to 1.
+//	// In these cases, streaming the output produces the same result
+//	// as not streaming, just more immediately.
+//	testStreamOutput = len(pkgArgs) == 0 || testBench ||
+//		(testShowPass && (len(pkgs) == 1 || buildP == 1))
+//
+//	// For 'go test -i -o x.test', we want to build x.test. Imply -c to make the logic easier.
+//	log.Infof("buildI: %v, testO: %v\n", buildI, testO)
+//	if buildI && testO != "" {
+//		testC = true
+//	}
+//	var b builder
+//	b.init()
+//
+//	if buildI {
+//		buildV = testV
+//
+//		deps := make(map[string]bool)
+//		for dep := range testMainDeps {
+//			deps[dep] = true
+//		}
+//
+//		for _, p := range pkgs {
+//			log.Infof("分析pkg, name: %s, dir: %s, importPath: %s \n", p.Name, p.Dir, p.ImportPath)
+//			// Dependencies for each test.
+//			for _, path := range p.Imports {
+//				log.Infof("Imports Path: %s \n", path)
+//				deps[path] = true
+//			}
+//			for _, path := range p.vendored(p.TestImports) {
+//				log.Infof("TestImports Path: %s \n", path)
+//				deps[path] = true
+//			}
+//			for _, path := range p.vendored(p.XTestImports) {
+//				log.Infof("XTestImports Path: %s \n", path)
+//				deps[path] = true
+//			}
+//		}
+//
+//		// translate C to runtime/cgo
+//		if deps["C"] {
+//			delete(deps, "C")
+//			deps["runtime/cgo"] = true
+//			if goos == runtime.GOOS && goarch == runtime.GOARCH && !buildRace && !buildMSan {
+//				deps["cmd/cgo"] = true
+//			}
+//		}
+//		// Ignore pseudo-packages.
+//		delete(deps, "unsafe")
+//
+//		all := []string{}
+//		for path := range deps {
+//			if !build.IsLocalImport(path) {
+//				all = append(all, path)
+//			}
+//		}
+//		sort.Strings(all)
+//
+//		log.Infof("所有依赖包，排序后的列如下: %s \n", all)
+//
+//		a := &action{}
+//		for _, p := range packagesForBuild(all) {
+//			a.deps = append(a.deps, b.action(modeInstall, modeInstall, p))
+//		}
+//		b.do(a)
+//		if !testC || a.failed {
+//			return
+//		}
+//		b.init()
+//
+//		log.Println("with -i flag, finish builder init")
+//	}
+//
+//	var builds, runs, prints []*action
+//
+//	if testCoverPaths != nil {
+//		// Load packages that were asked about for coverage.
+//		// packagesForBuild exits if the packages cannot be loaded.
+//		testCoverPkgs = packagesForBuild(testCoverPaths)
+//
+//		// Warn about -coverpkg arguments that are not actually used.
+//		used := make(map[string]bool)
+//		for _, p := range pkgs {
+//			used[p.ImportPath] = true
+//			for _, dep := range p.Deps {
+//				used[dep] = true
+//			}
+//		}
+//		for _, p := range testCoverPkgs {
+//			if !used[p.ImportPath] {
+//				fmt.Fprintf(os.Stderr, "warning: no packages being tested depend on %s\n", p.ImportPath)
+//			}
+//		}
+//
+//		// Mark all the coverage packages for rebuilding with coverage.
+//		for _, p := range testCoverPkgs {
+//			// There is nothing to cover in package unsafe; it comes from the compiler.
+//			if p.ImportPath == "unsafe" {
+//				continue
+//			}
+//			p.Stale = true // rebuild
+//			p.StaleReason = "rebuild for coverage"
+//			p.fake = true // do not warn about rebuild
+//			p.coverMode = testCoverMode
+//			var coverFiles []string
+//			coverFiles = append(coverFiles, p.GoFiles...)
+//			coverFiles = append(coverFiles, p.CgoFiles...)
+//			coverFiles = append(coverFiles, p.TestGoFiles...)
+//			p.coverVars = declareCoverVars(p.ImportPath, coverFiles...)
+//		}
+//
+//		log.Printf("with testCoverPaths = %s, finishing rebuilding with coverage \n", testCoverPaths)
+//	}
+//
+//	log.Println("Prepare build + run + print actions for all packages being tested")
+//
+//	// Prepare build + run + print actions for all packages being tested.
+//	for _, p := range pkgs {
+//
+//		//log.Printf("start to prepare package, name:%s, dir:%s, ImportPath:%s \n", p.Name, p.Dir, p.ImportPath)
+//
+//		// sync/atomic import is inserted by the cover tool. See #18486
+//		if testCover && testCoverMode == "atomic" {
+//			ensureImport(p, "sync/atomic")
+//		}
+//		buildTest, runTest, printTest, err := b.test(p)
+//
+//		if err != nil {
+//			log.Errorf("error: %s \n", err)
+//
+//			str := err.Error()
+//			if strings.HasPrefix(str, "\n") {
+//				str = str[1:]
+//			}
+//			failed := fmt.Sprintf("FAIL\t%s [setup failed]\n", p.ImportPath)
+//
+//			if p.ImportPath != "" {
+//				errorf("# %s\n%s\n%s", p.ImportPath, str, failed)
+//			} else {
+//				errorf("%s\n%s", str, failed)
+//			}
+//			continue
+//		}
+//		builds = append(builds, buildTest)
+//		runs = append(runs, runTest)
+//		prints = append(prints, printTest)
+//
+//		log.Printf("finished this pkg ImportPath %s \n", p.ImportPath)
+//	}
+//
+//	// Ultimately the goal is to print the output.
+//	root := &action{deps: prints}
+//
+//	// Force the printing of results to happen in order,
+//	// one at a time.
+//	for i, a := range prints {
+//		if i > 0 {
+//			a.deps = append(a.deps, prints[i-1])
+//		}
+//	}
+//
+//	// Force benchmarks to run in serial.
+//	if !testC && testBench {
+//		// The first run must wait for all builds.
+//		// Later runs must wait for the previous run's print.
+//		for i, run := range runs {
+//			if i == 0 {
+//				run.deps = append(run.deps, builds...)
+//			} else {
+//				run.deps = append(run.deps, prints[i-1])
+//			}
+//		}
+//	}
+//
+//	// If we are building any out-of-date packages other
+//	// than those under test, warn.
+//	okBuild := map[*Package]bool{}
+//	for _, p := range pkgs {
+//		okBuild[p] = true
+//	}
+//	warned := false
+//	for _, a := range actionList(root) {
+//		if a.p == nil || okBuild[a.p] {
+//			continue
+//		}
+//		okBuild[a.p] = true // warn at most once
+//
+//		// Don't warn about packages being rebuilt because of
+//		// things like coverage analysis.
+//		for _, p1 := range a.p.imports {
+//			if p1.fake {
+//				a.p.fake = true
+//			}
+//		}
+//
+//		if a.f != nil && !okBuild[a.p] && !a.p.fake && !a.p.local {
+//			if !warned {
+//				fmt.Fprintf(os.Stderr, "warning: building out-of-date packages:\n")
+//				warned = true
+//			}
+//			fmt.Fprintf(os.Stderr, "\t%s\n", a.p.ImportPath)
+//		}
+//	}
+//	if warned {
+//		args := strings.Join(pkgArgs, " ")
+//		if args != "" {
+//			args = " " + args
+//		}
+//		extraOpts := ""
+//		if buildRace {
+//			extraOpts = "-race "
+//		}
+//		if buildMSan {
+//			extraOpts = "-msan "
+//		}
+//		fmt.Fprintf(os.Stderr, "installing these packages with 'go test %s-i%s' will speed future tests.\n\n", extraOpts, args)
+//	}
+//	log.Printf("action list is: %v \n", *root)
+//
+//	b.do(root)
+//	log.Printf("finished prints output \n")
+//
+//}
+
 func runTest(cmd *Command, args []string) {
 	var pkgArgs []string
 	pkgArgs, testArgs = testFlags(args)
-
-	log.Printf("pkgArgs: %s \n", pkgArgs)
-	log.Printf("testArgs: %s \n", testArgs)
-
-	log.Printf("before findExecCmd output: %s \n", execCmd)
-
 	findExecCmd() // initialize cached result
-
-	log.Printf("findExecCmd output: %s \n", execCmd)
-
 	instrumentInit()
 	buildModeInit()
 	pkgs := packagesForBuild(pkgArgs)
-	if len(pkgs) == 0 {
-		fatalf("no packages to test")
-	}
-
-	log.Printf("packagesForBuild count: %d \n", len(pkgs))
-
-	if testC && len(pkgs) != 1 {
-		fatalf("cannot use -c flag with multiple packages")
-	}
-	if testO != "" && len(pkgs) != 1 {
-		fatalf("cannot use -o flag with multiple packages")
-	}
-	if testProfile && len(pkgs) != 1 {
-		fatalf("cannot use test profile flag with multiple packages")
-	}
-
-	// If a test timeout was given and is parseable, set our kill timeout
-	// to that timeout plus one minute. This is a backup alarm in case
-	// the test wedges with a goroutine spinning and its background
-	// timer does not get a chance to fire.
-	if dt, err := time.ParseDuration(testTimeout); err == nil && dt > 0 {
-		testKillTimeout = dt + 1*time.Minute
-	}
-
-	// show passing test output (after buffering) with -v flag.
-	// must buffer because tests are running in parallel, and
-	// otherwise the output will get mixed.
-	testShowPass = testV
-
-	// stream test output (no buffering) when no package has
-	// been given on the command line (implicit current directory)
-	// or when benchmarking.
-	// Also stream if we're showing output anyway with a
-	// single package under test or if parallelism is set to 1.
-	// In these cases, streaming the output produces the same result
-	// as not streaming, just more immediately.
-	testStreamOutput = len(pkgArgs) == 0 || testBench ||
-		(testShowPass && (len(pkgs) == 1 || buildP == 1))
-
-	// For 'go test -i -o x.test', we want to build x.test. Imply -c to make the logic easier.
-	log.Infof("buildI: %v, testO: %v\n", buildI, testO)
-	if buildI && testO != "" {
-		testC = true
-	}
 	var b builder
 	b.init()
-
 	if buildI {
 		buildV = testV
 
@@ -522,9 +741,7 @@ func runTest(cmd *Command, args []string) {
 
 		log.Println("with -i flag, finish builder init")
 	}
-
 	var builds, runs, prints []*action
-
 	if testCoverPaths != nil {
 		// Load packages that were asked about for coverage.
 		// packagesForBuild exits if the packages cannot be loaded.
@@ -563,9 +780,6 @@ func runTest(cmd *Command, args []string) {
 
 		log.Printf("with testCoverPaths = %s, finishing rebuilding with coverage \n", testCoverPaths)
 	}
-
-	log.Println("Prepare build + run + print actions for all packages being tested")
-
 	// Prepare build + run + print actions for all packages being tested.
 	for _, p := range pkgs {
 
@@ -630,7 +844,6 @@ func runTest(cmd *Command, args []string) {
 	for _, p := range pkgs {
 		okBuild[p] = true
 	}
-	warned := false
 	for _, a := range actionList(root) {
 		if a.p == nil || okBuild[a.p] {
 			continue
@@ -653,25 +866,7 @@ func runTest(cmd *Command, args []string) {
 			fmt.Fprintf(os.Stderr, "\t%s\n", a.p.ImportPath)
 		}
 	}
-	if warned {
-		args := strings.Join(pkgArgs, " ")
-		if args != "" {
-			args = " " + args
-		}
-		extraOpts := ""
-		if buildRace {
-			extraOpts = "-race "
-		}
-		if buildMSan {
-			extraOpts = "-msan "
-		}
-		fmt.Fprintf(os.Stderr, "installing these packages with 'go test %s-i%s' will speed future tests.\n\n", extraOpts, args)
-	}
-	log.Printf("action list is: %v \n", *root)
-
 	b.do(root)
-	log.Printf("finished prints output \n")
-
 }
 
 // ensures that package p imports the named package.

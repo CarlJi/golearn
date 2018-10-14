@@ -102,6 +102,64 @@ func main() {
 	}
 }
 
+func ConcurrentTaskRunsWithLimitedTime(worker int, t time.Duration, task func()) {
+	stop := make(chan bool)
+	var wg sync.WaitGroup
+
+	go func() {
+		for i := 0; i < worker; i++ {
+			wg.Add(1)
+			go func() {
+				defer GinkgoRecover()
+				defer wg.Done()
+				for {
+					select {
+					case <-stop:
+						return
+					default:
+						task()
+					}
+				}
+			}()
+		}
+	}()
+
+	timer := time.NewTimer(t)
+	select {
+	case <-timer.C:
+		timer.Stop()
+		close(stop)
+		wg.Wait()
+		Logf("finish tasks")
+		return
+	}
+}
+
+func ConcurrentTaskRunsWithLimitedCount(worker, count int, task func()) {
+	tasks := make(chan int, worker)
+	var wg sync.WaitGroup
+
+	go func() {
+		for i := 0; i < worker; i++ {
+			wg.Add(1)
+			go func() {
+				defer GinkgoRecover()
+				defer wg.Done()
+				for range tasks {
+					task()
+				}
+			}()
+		}
+	}()
+
+	for i := 0; i < count; i++ {
+		tasks <- i
+	}
+
+	close(tasks)
+	wg.Wait()
+}
+
 func printDescription(str []string) {
 	fmt.Printf("场景描述: %s \n", str)
 }

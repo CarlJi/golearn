@@ -1,2 +1,4 @@
-.cache
-.idea
+.cache/*
+.idea/*
+golearn.iml
+.idea/
