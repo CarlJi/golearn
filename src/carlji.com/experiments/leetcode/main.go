@@ -3,12 +3,12 @@ package main
 import (
 	"fmt"
 	"math"
+
+	. "carlji.com/experiments/leetcode/sub"
 )
 
 func main() {
-
 	fmt.Println(removeDuplicates([]int{1, 2, 2, 3}))
-
 	fmt.Println(findSingleNumber([]int{1, 2, 2, 1, 3}))
 	fmt.Println(findSingleNumber([]int{1, 2, 2, 1}))
 	fmt.Println(findSingleNumber([]int{1, 2, 2}))
@@ -54,6 +54,12 @@ func main() {
 
 	testMinStack()
 	testHanMingWeight()
+
+	//TopK related
+	testTopKFrequency()
+	testPartition()
+	testFindKLargest()
+	testFrequencySort()
 }
 
 func testHanMingWeight() {
@@ -96,6 +102,155 @@ func testMinStack() {
 	fmt.Printf("%+v\n", m)
 
 	fmt.Println("m.GetMin()", m.GetMin())
+}
+
+func testTopKFrequency() {
+	fmt.Println(topKFrequeny([]int{1}, 1))
+	fmt.Println(topKFrequeny([]int{1, 1, 1, 1, 2, 2, 0}, 2))
+	fmt.Println(topKFrequeny([]int{1, 1, 1, 2, 2, 3}, 2))
+}
+
+func testPartition(){
+	fmt.Println(partition([]int{1}, 0,0))
+	fmt.Println(partition([]int{2,5,3,4,2,4,1}, 0,6))
+}
+
+func testFindKLargest(){
+	fmt.Println("func testFindKLargest():")
+	fmt.Println(findKthLargest([]int{1},1))
+	fmt.Println(findKthLargest([]int{2,5,3,4,2,4,1},2))
+	fmt.Println(findKthLargest([]int{2,1},2))
+}
+
+func testFrequencySort(){
+	fmt.Println("func testFrequencySort():")
+	fmt.Println(frequencySort("eeeeee"))
+	fmt.Println(frequencySort("eeeetessf"))
+}
+
+//思路: 按照topKFrequency来做，先统计各个rune出现的次数，然后基于次数来重新组合rune
+func frequencySort(s string) string {
+	var keyCount = make(map[rune]int, 256)
+	for _, k := range s {
+		if v, ok:=keyCount[k]; ok {
+			keyCount[k] = v+1
+		} else {
+			keyCount[k] = 1
+		}
+	}
+
+	// TODO: BUG NOTICE+1
+	var countS = make([][]rune, len(s)+1)
+	for k, num := range keyCount{
+		var temp = make([]rune,0)
+		if len(countS[num]) != 0 {
+			temp = countS[num]
+		}
+		for i:=0; i<num; i++ {
+			temp = append(temp, k)
+		}
+		countS[num]= temp
+	}
+
+	var ret []rune
+	for index := len(countS) - 1; index > 0 ; index -- {
+		ret = append(ret, countS[index]...)
+	}
+
+	return string(ret)
+}
+
+// 思路: 用快排的partition算法找出一个数字, 左边的比其小，右边的比其大
+// 这样通过多次比较旧可以找到这个第k大的数字
+// SUMMARY:
+// 1. 排序，然后取值 O(N*logN)
+// 2. 最小堆，然后取值 O(N*logK)
+// 3. Partion选择，然后取值 O(N*logK)
+// TODO: FOCUS
+func findKthLargest(nums []int, k int) int {
+     var target = len(nums)-k
+     var l, r = 0, len(nums)-1
+     var index = 0
+
+     // TODO: [BUG NOTICE] 不可以直接比较index与target的值，必须经过partition之后，index的值才是有价值的！！
+     for {
+     	index = partition(nums, l, r)
+     	if index > target {
+     		r = index-1
+     		continue
+		}
+
+		if index < target {
+			l = index+1
+			continue
+		}
+		break
+	 }
+
+	 return nums[index]
+}
+
+// TODO: NOTICE
+func partition(nums []int, start, end int) int {
+	var l, r = start, end
+	var base = nums[l]
+	for l < r {
+		for l < r && nums[r] >= base {
+			r--
+		}
+
+		if l < r {
+			nums [l] = nums[r]
+			l++
+		}
+
+		for  l < r && nums[l] <= base  {
+			l++
+		}
+
+		if l < r {
+			nums[r] = nums[l]
+			r--
+		}
+	}
+	nums[l] = base
+	return l
+}
+
+// 思路: 首先用map来计数每个数字出现的次数, 之后有几种方式:
+// 1. 排序， 用快排的话是时间复杂度 O(n*logN)
+// 2. 最小堆， 时间复杂度 O(n*logk)
+// 3. 用数组，数字出现的次数作为下表, 对应相关数字的slice， 之后倒叙遍历这个数据，可以拿到期望的最多出现的数字
+func topKFrequeny(nums []int, k int) []int {
+	var countM = make(map[int]int, 0)
+	for _, n := range nums {
+		if v, ok := countM[n]; ok {
+			countM[n] = v + 1
+		} else {
+			countM[n] = 1
+		}
+	}
+
+	// BUG NOTICE: 长度这里要加一 ！！
+	var frequencyS = make([][]int, len(nums)+1)
+	for key, num := range countM {
+		var temp []int
+		if len(frequencyS[num]) != 0 {
+			temp = frequencyS[num]
+		}
+
+		temp = append(temp, key)
+		frequencyS[num] = temp
+	}
+
+	var ret []int
+	for i := len(frequencyS) - 1; i > 0; i-- {
+		if len(frequencyS[i]) != 0 && len(ret) < k { // 如果有数字的出现的测试是一样的怎么办？比如1,1,2,2, 去topFrequency=1, 应该得哪个？
+			ret = append(ret, frequencyS[i]...)
+		}
+	}
+
+	return ret
 }
 
 func maxSubArr(nums []int) int {
