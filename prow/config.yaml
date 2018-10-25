@@ -1,0 +1,19 @@
+presubmits:
+  CarlJi/golearn:
+  - name: unit-tests         # As for periodics.
+    always_run: true         # Run for every PR, or only when requested.
+    skip_report: false       # Whether to skip setting a status on GitHub.
+    context: unit-tests      # Status context. Usually the job name.
+    max_concurrency: 10      # As for postsubmits.
+    agent: kubernetes        # As for periodics.
+    spec:
+      containers:
+      - image: alpine
+        command:
+        - printenv
+    trigger: "(?m)^/test this"
+    rerun_command: "/test this"
+
+prowjob_namespace: jichangjun
+pod_namespace: jichangjun
+log_level: debug
