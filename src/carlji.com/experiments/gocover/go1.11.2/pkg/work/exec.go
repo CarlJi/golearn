@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -30,6 +29,7 @@ import (
 	"carlji.com/experiments/gocover/go1.11.2/pkg/cfg"
 	"carlji.com/experiments/gocover/go1.11.2/pkg/load"
 	"carlji.com/experiments/gocover/go1.11.2/pkg/str"
+	"qiniupkg.com/x/log.v7"
 )
 
 // actionList returns the list of actions in the dag rooted at root
@@ -437,6 +437,8 @@ func (b *Builder) build(a *Action) (err error) {
 	if p.Module != nil && !allowedVersion(p.Module.GoVersion) {
 		return fmt.Errorf("module requires Go %s", p.Module.GoVersion)
 	}
+
+	log.Printf("func build, mkdir: %s \n", a.Objdir)
 
 	if err := b.Mkdir(a.Objdir); err != nil {
 		return err
@@ -1637,6 +1639,10 @@ func (b *Builder) installHeader(a *Action) error {
 // cover runs, in effect,
 //	go tool cover -mode=b.coverMode -var="varName" -o dst.go src.go
 func (b *Builder) cover(a *Action, dst, src string, varName string) error {
+	log.Printf("in effect cover runs, " +
+		"a.Objdir: %s, desc: %s, cfg.BuildToolexec: %v, -mode:%s, src: %s, varname: %s, dst: %s \n",
+		a.Objdir, "cover "+a.Package.ImportPath, cfg.BuildToolexec, a.Package.Internal.CoverMode, src, varName, dst)
+
 	return b.run(a, a.Objdir, "cover "+a.Package.ImportPath, nil,
 		cfg.BuildToolexec,
 		base.Tool("cover"),
