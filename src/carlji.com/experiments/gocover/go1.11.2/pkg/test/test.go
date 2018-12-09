@@ -31,6 +31,7 @@ import (
 	"carlji.com/experiments/gocover/go1.11.2/pkg/str"
 	"carlji.com/experiments/gocover/go1.11.2/pkg/work"
 	"carlji.com/experiments/gocover/go1.11.2/pkg/test2json"
+	"qiniupkg.com/x/log.v7"
 )
 
 // Break init loop.
@@ -528,9 +529,13 @@ var testVetFlags = []string{
 }
 
 func runTest(cmd *base.Command, args []string) {
+	log.Printf("开始执行runTest, args: %v \n", args)
+
 	modload.LoadTests = true
 
 	pkgArgs, testArgs = testFlags(args)
+	log.Printf("经过testFlags 方法处理之后，得到变量pkgArgs: %v,  testArgs:%v, testCoverPaths:%v \n", pkgArgs, testArgs, testCoverPaths)
+
 
 	work.FindExecCmd() // initialize cached result
 
@@ -538,6 +543,8 @@ func runTest(cmd *base.Command, args []string) {
 	work.VetFlags = testVetFlags
 
 	pkgs = load.PackagesForBuild(pkgArgs)
+	log.Printf("load.PackagesForBuild, len(pkgs):%d \n", len(pkgs))
+
 	if len(pkgs) == 0 {
 		base.Fatalf("no packages to test")
 	}
@@ -588,6 +595,8 @@ func runTest(cmd *base.Command, args []string) {
 	}
 
 	var b work.Builder
+
+	// 准备编译的临时目录
 	b.Init()
 
 	if cfg.BuildI {
@@ -645,6 +654,7 @@ func runTest(cmd *base.Command, args []string) {
 
 	var builds, runs, prints []*work.Action
 
+	log.Printf("testCoverPaths 是否不为nil: %v \n", testCoverPaths != nil)
 	if testCoverPaths != nil {
 		match := make([]func(*load.Package) bool, len(testCoverPaths))
 		matched := make([]bool, len(testCoverPaths))
@@ -653,7 +663,11 @@ func runTest(cmd *base.Command, args []string) {
 		}
 
 		// Select for coverage all dependencies matching the testCoverPaths patterns.
-		for _, p := range load.TestPackageList(pkgs) {
+		newPkgs:= load.TestPackageList(pkgs)
+
+		log.Printf("after load.TestPackageList, total: %d, like: %#v \n", len(newPkgs), *newPkgs[0])
+
+		for _, p := range newPkgs {
 			haveMatch := false
 			for i := range testCoverPaths {
 				if match[i](p) {
@@ -686,7 +700,7 @@ func runTest(cmd *base.Command, args []string) {
 		// Warn about -coverpkg arguments that are not actually used.
 		for i := range testCoverPaths {
 			if !matched[i] {
-				fmt.Fprintf(os.Stderr, "warning: no packages being tested depend on matches for pattern %s\n", testCoverPaths[i])
+				log.Errorf("warning: no packages being tested depend on matches for pattern %s\n", testCoverPaths[i])
 			}
 		}
 
@@ -696,6 +710,9 @@ func runTest(cmd *base.Command, args []string) {
 			if p.ImportPath == "unsafe" {
 				continue
 			}
+
+			log.Printf("Mark testCoverPkg, p: %#v \n", *p)
+
 			p.Internal.CoverMode = testCoverMode
 			var coverFiles []string
 			coverFiles = append(coverFiles, p.GoFiles...)
@@ -805,10 +822,17 @@ func builderTest(b *work.Builder, p *load.Package) (buildAction, runAction, prin
 			DeclVars: declareCoverVars,
 		}
 	}
+
+	log.Printf("cover 结构, cover: %#v \n", *cover)
+
 	pmain, ptest, pxtest, err := load.TestPackagesFor(p, cover)
 	if err != nil {
 		return nil, nil, nil, err
 	}
+
+	log.Printf("after load.TestPackagesFor, pmain: %#v \n", *pmain)
+	//log.Printf("after load.TestPackagesFor, ptest: %#v \n", ptest)
+	//log.Printf("after load.TestPackagesFor, pxtest: %#v \n", pxtest)
 
 	// Use last element of import path, not package name.
 	// They differ when package name is "main".
@@ -826,6 +850,8 @@ func builderTest(b *work.Builder, p *load.Package) (buildAction, runAction, prin
 	if err := b.Mkdir(testDir); err != nil {
 		return nil, nil, nil, err
 	}
+
+	log.Printf("testDir: %s \n", testDir)
 
 	pmain.Dir = testDir
 	pmain.Internal.OmitDebug = !testC && !testNeedBinary
@@ -988,6 +1014,8 @@ func declareCoverVars(p *load.Package, files ...string) map[string]*load.CoverVa
 		if isTestFile(file) {
 			continue
 		}
+
+		log.Printf("declareCoverVars, file: %s \n", file)
 		// For a package that is "local" (imported via ./ import or command line, outside GOPATH),
 		// we record the full path to the file name.
 		// Otherwise we record the import path, then a forward slash, then the file name.
@@ -999,10 +1027,14 @@ func declareCoverVars(p *load.Package, files ...string) map[string]*load.CoverVa
 		} else {
 			longFile = path.Join(p.ImportPath, file)
 		}
+
+		log.Printf("declareCoverVars, longFile: %s \n", longFile)
 		coverVars[file] = &load.CoverVar{
 			File: longFile,
 			Var:  fmt.Sprintf("GoCover_%d_%x", coverIndex, h),
 		}
+
+		log.Printf("declareCoverVars, var: %s \n", fmt.Sprintf("GoCover_%d_%x", coverIndex, h))
 		coverIndex++
 	}
 	return coverVars
@@ -1594,13 +1626,15 @@ func coveragePercentage(out []byte) string {
 
 // builderCleanTest is the action for cleaning up after a test.
 func builderCleanTest(b *work.Builder, a *work.Action) error {
+	log.Printf("保存for debug: %s \n", a.Objdir)
 	if cfg.BuildWork {
 		return nil
 	}
 	if cfg.BuildX {
 		b.Showcmd("", "rm -r %s", a.Objdir)
 	}
-	os.RemoveAll(a.Objdir)
+
+	//os.RemoveAll(a.Objdir)
 	return nil
 }
 

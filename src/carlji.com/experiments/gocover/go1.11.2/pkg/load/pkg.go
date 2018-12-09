@@ -25,6 +25,7 @@ import (
 	"carlji.com/experiments/gocover/go1.11.2/pkg/modinfo"
 	"carlji.com/experiments/gocover/go1.11.2/pkg/search"
 	"carlji.com/experiments/gocover/go1.11.2/pkg/str"
+	"qiniupkg.com/x/log.v7"
 )
 
 var (
@@ -1840,6 +1841,7 @@ func PackagesAndErrors(patterns []string) []*Package {
 	}
 
 	matches := ImportPaths(patterns)
+
 	var (
 		pkgs    []*Package
 		stk     ImportStack
@@ -1897,6 +1899,8 @@ func PackagesForBuild(args []string) []*Package {
 	pkgs := PackagesAndErrors(args)
 	printed := map[*PackageError]bool{}
 	for _, pkg := range pkgs {
+		log.Printf("func PackagesAndErrors, pkg:%#v \n", *pkg)
+
 		if pkg.Error != nil {
 			base.Errorf("can't load package: %s", pkg.Error)
 			printed[pkg.Error] = true

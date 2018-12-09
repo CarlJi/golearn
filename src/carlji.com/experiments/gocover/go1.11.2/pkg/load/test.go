@@ -21,6 +21,7 @@ import (
 	"text/template"
 	"unicode"
 	"unicode/utf8"
+	"log"
 )
 
 var TestMainDeps = []string{
@@ -290,11 +291,15 @@ func TestPackagesFor(p *Package, cover *TestCover) (pmain, ptest, pxtest *Packag
 		}
 	}
 
+	log.Printf("cover 结构, t.cover:%#v \n", *t.Cover)
+
 	data, err := formatTestmain(t)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 	pmain.Internal.TestmainGo = &data
+
+	log.Printf("testmain 内容, testmain:%s \n", string(data))
 
 	return pmain, ptest, pxtest, nil
 }
