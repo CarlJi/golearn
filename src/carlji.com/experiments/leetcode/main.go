@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math"
+	"sort"
 
 	. "carlji.com/experiments/leetcode/sub"
 )
@@ -60,6 +61,71 @@ func main() {
 	testPartition()
 	testFindKLargest()
 	testFrequencySort()
+
+	testT()
+
+	testBinarySearch()
+}
+
+func testT() {
+	var times = []struct {
+		start int64
+		end   int64
+	}{
+		{100100, 100120},
+		{100100, 100140},
+		{100130, 100135},
+		{100134, 100135},
+		{100134, 100135},
+		{100140, 100155},
+		{100141, 100155},
+	}
+
+	var pp int
+	var endT []int64
+
+	for i, tt := range times {
+		if i == 0 {
+			endT = append(endT, tt.end)
+			pp += 1
+			continue
+		}
+
+		if tt.start < endT[0] {
+			pp += 1
+			endT = InsertSort(endT, tt.end)
+
+			fmt.Printf("1=========> %+v \n", endT)
+		} else {
+			endT[0] = tt.end
+			sort.SliceStable(endT, func(i, j int) bool {
+				return i < j
+			})
+
+			fmt.Printf("2=========> %+v \n", endT)
+
+		}
+	}
+
+	fmt.Println("=========>", pp)
+	fmt.Printf("=========> %+v", endT)
+}
+
+func InsertSort(arr []int64, element int64) []int64 {
+	for i, e := range arr {
+		if element > e {
+			continue
+		}
+		newArr := make([]int64, len(arr)+1)
+		copy(newArr[0:i], arr[0:i])
+		newArr[i] = element
+		copy(newArr[i+1:], arr[i:])
+
+		return newArr
+	}
+
+	arr = append(arr, element)
+	return arr
 }
 
 func testHanMingWeight() {
@@ -110,30 +176,37 @@ func testTopKFrequency() {
 	fmt.Println(topKFrequeny([]int{1, 1, 1, 2, 2, 3}, 2))
 }
 
-func testPartition(){
-	fmt.Println(partition([]int{1}, 0,0))
-	fmt.Println(partition([]int{2,5,3,4,2,4,1}, 0,6))
+func testPartition() {
+	fmt.Println(partition([]int{1}, 0, 0))
+	fmt.Println(partition([]int{2, 5, 3, 4, 2, 4, 1}, 0, 6))
 }
 
-func testFindKLargest(){
+func testFindKLargest() {
 	fmt.Println("func testFindKLargest():")
-	fmt.Println(findKthLargest([]int{1},1))
-	fmt.Println(findKthLargest([]int{2,5,3,4,2,4,1},2))
-	fmt.Println(findKthLargest([]int{2,1},2))
+	fmt.Println(findKthLargest([]int{1}, 1))
+	fmt.Println(findKthLargest([]int{2, 5, 3, 4, 2, 4, 1}, 2))
+	fmt.Println(findKthLargest([]int{2, 1}, 2))
 }
 
-func testFrequencySort(){
+func testFrequencySort() {
 	fmt.Println("func testFrequencySort():")
 	fmt.Println(frequencySort("eeeeee"))
 	fmt.Println(frequencySort("eeeetessf"))
+}
+
+func testBinarySearch() {
+	fmt.Println("func testBinarySearch():")
+	fmt.Println(binarySearch([]int{1,2,3,4,5,6,8}, 6))
+	fmt.Println(binarySearch([]int{1,2,3,4,5,6,8}, 1))
+	fmt.Println(binarySearch([]int{1,2,3,4,6,8}, 7))
 }
 
 //思路: 按照topKFrequency来做，先统计各个rune出现的次数，然后基于次数来重新组合rune
 func frequencySort(s string) string {
 	var keyCount = make(map[rune]int, 256)
 	for _, k := range s {
-		if v, ok:=keyCount[k]; ok {
-			keyCount[k] = v+1
+		if v, ok := keyCount[k]; ok {
+			keyCount[k] = v + 1
 		} else {
 			keyCount[k] = 1
 		}
@@ -141,19 +214,19 @@ func frequencySort(s string) string {
 
 	// TODO: BUG NOTICE+1
 	var countS = make([][]rune, len(s)+1)
-	for k, num := range keyCount{
-		var temp = make([]rune,0)
+	for k, num := range keyCount {
+		var temp = make([]rune, 0)
 		if len(countS[num]) != 0 {
 			temp = countS[num]
 		}
-		for i:=0; i<num; i++ {
+		for i := 0; i < num; i++ {
 			temp = append(temp, k)
 		}
-		countS[num]= temp
+		countS[num] = temp
 	}
 
 	var ret []rune
-	for index := len(countS) - 1; index > 0 ; index -- {
+	for index := len(countS) - 1; index > 0; index-- {
 		ret = append(ret, countS[index]...)
 	}
 
@@ -168,26 +241,26 @@ func frequencySort(s string) string {
 // 3. Partion选择，然后取值 O(N*logK)
 // TODO: FOCUS
 func findKthLargest(nums []int, k int) int {
-     var target = len(nums)-k
-     var l, r = 0, len(nums)-1
-     var index = 0
+	var target = len(nums) - k
+	var l, r = 0, len(nums) - 1
+	var index = 0
 
-     // TODO: [BUG NOTICE] 不可以直接比较index与target的值，必须经过partition之后，index的值才是有价值的！！
-     for {
-     	index = partition(nums, l, r)
-     	if index > target {
-     		r = index-1
-     		continue
+	// TODO: [BUG NOTICE] 不可以直接比较index与target的值，必须经过partition之后，index的值才是有价值的！！
+	for {
+		index = partition(nums, l, r)
+		if index > target {
+			r = index - 1
+			continue
 		}
 
 		if index < target {
-			l = index+1
+			l = index + 1
 			continue
 		}
 		break
-	 }
+	}
 
-	 return nums[index]
+	return nums[index]
 }
 
 // TODO: NOTICE
@@ -200,11 +273,11 @@ func partition(nums []int, start, end int) int {
 		}
 
 		if l < r {
-			nums [l] = nums[r]
+			nums[l] = nums[r]
 			l++
 		}
 
-		for  l < r && nums[l] <= base  {
+		for l < r && nums[l] <= base {
 			l++
 		}
 
@@ -399,4 +472,22 @@ func hanMingWeight(n int) int {
 	}
 
 	return count
+}
+
+func binarySearch(nums []int, target int) int {
+	left, right := 0, len(nums)-1
+	for left <= right {
+		middle := (left + right)/2
+		if nums[middle] == target {
+			return middle
+		}
+
+		if nums[middle] < target {
+			left = middle +1
+		} else {
+			right = middle -1
+		}
+	}
+
+	return -1
 }
