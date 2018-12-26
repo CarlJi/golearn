@@ -196,9 +196,9 @@ func testFrequencySort() {
 
 func testBinarySearch() {
 	fmt.Println("func testBinarySearch():")
-	fmt.Println(binarySearch([]int{1,2,3,4,5,6,8}, 6))
-	fmt.Println(binarySearch([]int{1,2,3,4,5,6,8}, 1))
-	fmt.Println(binarySearch([]int{1,2,3,4,6,8}, 7))
+	fmt.Println(binarySearch([]int{1, 2, 3, 4, 5, 6, 8}, 6))
+	fmt.Println(binarySearch([]int{1, 2, 3, 4, 5, 6, 8}, 1))
+	fmt.Println(binarySearch([]int{1, 2, 3, 4, 6, 8}, 7))
 }
 
 //思路: 按照topKFrequency来做，先统计各个rune出现的次数，然后基于次数来重新组合rune
@@ -477,15 +477,15 @@ func hanMingWeight(n int) int {
 func binarySearch(nums []int, target int) int {
 	left, right := 0, len(nums)-1
 	for left <= right {
-		middle := (left + right)/2
+		middle := (left + right) / 2
 		if nums[middle] == target {
 			return middle
 		}
 
 		if nums[middle] < target {
-			left = middle +1
+			left = middle + 1
 		} else {
-			right = middle -1
+			right = middle - 1
 		}
 	}
 
