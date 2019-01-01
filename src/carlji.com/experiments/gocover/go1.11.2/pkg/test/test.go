@@ -29,8 +29,8 @@ import (
 	"carlji.com/experiments/gocover/go1.11.2/pkg/load"
 	"carlji.com/experiments/gocover/go1.11.2/pkg/modload"
 	"carlji.com/experiments/gocover/go1.11.2/pkg/str"
-	"carlji.com/experiments/gocover/go1.11.2/pkg/work"
 	"carlji.com/experiments/gocover/go1.11.2/pkg/test2json"
+	"carlji.com/experiments/gocover/go1.11.2/pkg/work"
 	"qiniupkg.com/x/log.v7"
 )
 
@@ -536,6 +536,7 @@ func runTest(cmd *base.Command, args []string) {
 	pkgArgs, testArgs = testFlags(args)
 	log.Printf("经过testFlags 方法处理之后，得到变量pkgArgs: %v,  testArgs:%v, testCoverPaths:%v \n", pkgArgs, testArgs, testCoverPaths)
 
+	//TODO: 什么是pkgArgs,做什么用?
 
 	work.FindExecCmd() // initialize cached result
 
@@ -544,6 +545,9 @@ func runTest(cmd *base.Command, args []string) {
 
 	pkgs = load.PackagesForBuild(pkgArgs)
 	log.Printf("load.PackagesForBuild, len(pkgs):%d \n", len(pkgs))
+	for _, p := range pkgs {
+		log.Printf("加载的包为, %#v \n", *p)
+	}
 
 	if len(pkgs) == 0 {
 		base.Fatalf("no packages to test")
@@ -654,7 +658,7 @@ func runTest(cmd *base.Command, args []string) {
 
 	var builds, runs, prints []*work.Action
 
-	log.Printf("testCoverPaths 是否不为nil: %v \n", testCoverPaths != nil)
+	log.Printf("testCoverPaths is: %#v \n", testCoverPaths)
 	if testCoverPaths != nil {
 		match := make([]func(*load.Package) bool, len(testCoverPaths))
 		matched := make([]bool, len(testCoverPaths))
@@ -663,10 +667,12 @@ func runTest(cmd *base.Command, args []string) {
 		}
 
 		// Select for coverage all dependencies matching the testCoverPaths patterns.
-		newPkgs:= load.TestPackageList(pkgs)
+		newPkgs := load.TestPackageList(pkgs)
 
-		log.Printf("after load.TestPackageList, total: %d, like: %#v \n", len(newPkgs), *newPkgs[0])
-
+		log.Printf("after load.TestPackageList, total: %d \n", len(newPkgs))
+		for _, p := range newPkgs {
+			log.Debugf("ImportPath:%s", p.ImportPath)
+		}
 		for _, p := range newPkgs {
 			haveMatch := false
 			for i := range testCoverPaths {
@@ -703,6 +709,9 @@ func runTest(cmd *base.Command, args []string) {
 				log.Errorf("warning: no packages being tested depend on matches for pattern %s\n", testCoverPaths[i])
 			}
 		}
+
+		log.Printf("match package处理之后，testCoverPaths is: %#v \n", testCoverPaths)
+		log.Printf("match package处理之后，testCoverPkgs 数量 is: %d \n", len(testCoverPkgs))
 
 		// Mark all the coverage packages for rebuilding with coverage.
 		for _, p := range testCoverPkgs {
@@ -831,8 +840,6 @@ func builderTest(b *work.Builder, p *load.Package) (buildAction, runAction, prin
 	}
 
 	log.Printf("after load.TestPackagesFor, pmain: %#v \n", *pmain)
-	//log.Printf("after load.TestPackagesFor, ptest: %#v \n", ptest)
-	//log.Printf("after load.TestPackagesFor, pxtest: %#v \n", pxtest)
 
 	// Use last element of import path, not package name.
 	// They differ when package name is "main".
@@ -1015,7 +1022,6 @@ func declareCoverVars(p *load.Package, files ...string) map[string]*load.CoverVa
 			continue
 		}
 
-		log.Printf("declareCoverVars, file: %s \n", file)
 		// For a package that is "local" (imported via ./ import or command line, outside GOPATH),
 		// we record the full path to the file name.
 		// Otherwise we record the import path, then a forward slash, then the file name.
@@ -1028,13 +1034,12 @@ func declareCoverVars(p *load.Package, files ...string) map[string]*load.CoverVa
 			longFile = path.Join(p.ImportPath, file)
 		}
 
-		log.Printf("declareCoverVars, longFile: %s \n", longFile)
 		coverVars[file] = &load.CoverVar{
 			File: longFile,
 			Var:  fmt.Sprintf("GoCover_%d_%x", coverIndex, h),
 		}
 
-		log.Printf("declareCoverVars, var: %s \n", fmt.Sprintf("GoCover_%d_%x", coverIndex, h))
+		log.Printf("declareCoverVars, file: %s, var: %s \n", longFile, fmt.Sprintf("GoCover_%d_%x", coverIndex, h))
 		coverIndex++
 	}
 	return coverVars
@@ -1135,6 +1140,9 @@ func (c *runCache) builderRunTest(b *work.Builder, a *work.Action) error {
 	}
 
 	execCmd := work.FindExecCmd()
+
+	log.Printf("execCmd:%v", execCmd)
+
 	testlogArg := []string{}
 	if !c.disableCache && len(execCmd) == 0 {
 		testlogArg = []string{"-test.testlogfile=" + a.Objdir + "testlog.txt"}
@@ -1157,6 +1165,7 @@ func (c *runCache) builderRunTest(b *work.Builder, a *work.Action) error {
 		}
 	}
 
+	log.Printf("whole commands:%v", args)
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Dir = a.Package.Dir
 	cmd.Env = base.EnvForDir(cmd.Dir, cfg.OrigEnv)
@@ -1626,7 +1635,6 @@ func coveragePercentage(out []byte) string {
 
 // builderCleanTest is the action for cleaning up after a test.
 func builderCleanTest(b *work.Builder, a *work.Action) error {
-	log.Printf("保存for debug: %s \n", a.Objdir)
 	if cfg.BuildWork {
 		return nil
 	}

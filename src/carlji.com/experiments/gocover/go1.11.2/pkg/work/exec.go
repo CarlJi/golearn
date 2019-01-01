@@ -438,7 +438,7 @@ func (b *Builder) build(a *Action) (err error) {
 		return fmt.Errorf("module requires Go %s", p.Module.GoVersion)
 	}
 
-	log.Printf("func build, mkdir: %s \n", a.Objdir)
+	log.Printf("build action, mkdir: %s \n", a.Objdir)
 
 	if err := b.Mkdir(a.Objdir); err != nil {
 		return err
@@ -498,6 +498,7 @@ func (b *Builder) build(a *Action) (err error) {
 
 	// If we're doing coverage, preprocess the .go files and put them in the work directory
 	if a.Package.Internal.CoverMode != "" {
+		log.Println("===========> 开始处理覆盖率分析文件")
 		for i, file := range str.StringList(gofiles, cgofiles) {
 			var sourceFile string
 			var coverFile string
@@ -637,6 +638,7 @@ func (b *Builder) build(a *Action) (err error) {
 	}
 
 	// Compile Go.
+	log.Println("============> 编译go代码")
 	objpkg := objdir + "_pkg_.a"
 	ofile, out, err := BuildToolchain.gc(b, a, objpkg, icfg.Bytes(), len(sfiles) > 0, gofiles)
 	if len(out) > 0 {
@@ -1639,7 +1641,7 @@ func (b *Builder) installHeader(a *Action) error {
 // cover runs, in effect,
 //	go tool cover -mode=b.coverMode -var="varName" -o dst.go src.go
 func (b *Builder) cover(a *Action, dst, src string, varName string) error {
-	log.Printf("in effect cover runs, " +
+	log.Printf("in effect cover runs, "+
 		"a.Objdir: %s, desc: %s, cfg.BuildToolexec: %v, -mode:%s, src: %s, varname: %s, dst: %s \n",
 		a.Objdir, "cover "+a.Package.ImportPath, cfg.BuildToolexec, a.Package.Internal.CoverMode, src, varName, dst)
 

@@ -6,8 +6,6 @@ package load
 
 import (
 	"bytes"
-	"carlji.com/experiments/gocover/go1.11.2/pkg/base"
-	"carlji.com/experiments/gocover/go1.11.2/pkg/str"
 	"errors"
 	"fmt"
 	"go/ast"
@@ -21,7 +19,10 @@ import (
 	"text/template"
 	"unicode"
 	"unicode/utf8"
-	"log"
+
+	"carlji.com/experiments/gocover/go1.11.2/pkg/base"
+	"carlji.com/experiments/gocover/go1.11.2/pkg/str"
+	"qiniupkg.com/x/log.v7"
 )
 
 var TestMainDeps = []string{
@@ -57,6 +58,11 @@ func TestPackagesFor(p *Package, cover *TestCover) (pmain, ptest, pxtest *Packag
 	var imports, ximports []*Package
 	var stk ImportStack
 	stk.Push(p.ImportPath + " (test)")
+
+	log.Printf("p.Root: %s", p.Root)
+	log.Printf("p.Name: %s", p.Name)
+	log.Printf("p.ImportPath: %s", p.ImportPath)
+	log.Printf("p.TestImports: %v", p.TestImports)
 	rawTestImports := str.StringList(p.TestImports)
 	for i, path := range p.TestImports {
 		p1 := LoadImport(path, p.Dir, p, &stk, p.Internal.Build.TestImportPos[path], ResolveImport)
@@ -85,6 +91,8 @@ func TestPackagesFor(p *Package, cover *TestCover) (pmain, ptest, pxtest *Packag
 	stk.Pop()
 	stk.Push(p.ImportPath + "_test")
 	pxtestNeedsPtest := false
+
+	log.Printf("p.XTestImports: %s", p.XTestImports)
 	rawXTestImports := str.StringList(p.XTestImports)
 	for i, path := range p.XTestImports {
 		p1 := LoadImport(path, p.Dir, p, &stk, p.Internal.Build.XTestImportPos[path], ResolveImport)
@@ -201,6 +209,10 @@ func TestPackagesFor(p *Package, cover *TestCover) (pmain, ptest, pxtest *Packag
 	for _, d := range LinkerDeps(p) {
 		deps = append(deps, d)
 	}
+
+	log.Printf("pmain.ImportPath: %v", pmain.ImportPath)
+	log.Printf("ptest.ImportPath: %v", ptest.ImportPath)
+	log.Printf("deps: %v", deps)
 	for _, dep := range deps {
 		if dep == ptest.ImportPath {
 			pmain.Internal.Imports = append(pmain.Internal.Imports, ptest)
@@ -228,6 +240,10 @@ func TestPackagesFor(p *Package, cover *TestCover) (pmain, ptest, pxtest *Packag
 		}
 	}
 
+	for _, pm := range pmain.Internal.Imports {
+		log.Printf("pmain.Internal.Import, name:%s, importPath:%s", pm.Name, pm.ImportPath)
+	}
+
 	// Do initial scan for metadata needed for writing _testmain.go
 	// Use that metadata to update the list of imports for package main.
 	// The list of imports is used by recompileForTest and by the loop
@@ -236,6 +252,10 @@ func TestPackagesFor(p *Package, cover *TestCover) (pmain, ptest, pxtest *Packag
 	if err != nil {
 		return nil, nil, nil, err
 	}
+
+	log.Printf("pmain.GoFiles:%v", pmain.GoFiles)
+	log.Printf("pmain.ImportPath:%s", pmain.ImportPath)
+
 	t.Cover = cover
 	if len(ptest.GoFiles)+len(ptest.CgoFiles) > 0 {
 		pmain.Internal.Imports = append(pmain.Internal.Imports, ptest)
@@ -248,7 +268,7 @@ func TestPackagesFor(p *Package, cover *TestCover) (pmain, ptest, pxtest *Packag
 		t.ImportXtest = true
 	}
 
-	// Sort and dedup pmain.Imports.
+	// Sort and d edup pmain.Imports.
 	// Only matters for go list -test output.
 	sort.Strings(pmain.Imports)
 	w := 0
@@ -262,6 +282,7 @@ func TestPackagesFor(p *Package, cover *TestCover) (pmain, ptest, pxtest *Packag
 	pmain.Internal.RawImports = str.StringList(pmain.Imports)
 
 	if ptest != p {
+		log.Printf("ptest != p !!")
 		// We have made modifications to the package p being tested
 		// and are rebuilding p (as ptest).
 		// Arrange to rebuild all packages q such that
@@ -291,7 +312,7 @@ func TestPackagesFor(p *Package, cover *TestCover) (pmain, ptest, pxtest *Packag
 		}
 	}
 
-	log.Printf("cover 结构, t.cover:%#v \n", *t.Cover)
+	log.Printf("cover结构, t.cover:%#v \n", *t.Cover)
 
 	data, err := formatTestmain(t)
 	if err != nil {

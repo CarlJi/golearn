@@ -20,10 +20,10 @@ import (
 	"sync"
 
 	"carlji.com/experiments/gocover/go1.11.2/pkg/base"
+	"carlji.com/experiments/gocover/go1.11.2/pkg/buildid"
 	"carlji.com/experiments/gocover/go1.11.2/pkg/cache"
 	"carlji.com/experiments/gocover/go1.11.2/pkg/cfg"
 	"carlji.com/experiments/gocover/go1.11.2/pkg/load"
-	"carlji.com/experiments/gocover/go1.11.2/pkg/buildid"
 )
 
 // A Builder holds global state about a build.
