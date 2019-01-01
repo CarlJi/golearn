@@ -19,6 +19,7 @@ import (
 	"carlji.com/experiments/gocover/go1.11.2/pkg/cfg"
 	"carlji.com/experiments/gocover/go1.11.2/pkg/load"
 	"carlji.com/experiments/gocover/go1.11.2/pkg/search"
+	"qiniupkg.com/x/log.v7"
 )
 
 var CmdBuild = &base.Command{
@@ -284,11 +285,17 @@ func runBuild(cmd *base.Command, args []string) {
 
 	pkgs := load.PackagesForBuild(args)
 
+	log.Printf("load.PackagesForBuild, len(pkgs):%v", len(pkgs))
+	for _, p := range pkgs {
+		log.Printf("加载的包为, %#v \n", *p)
+	}
+
 	if len(pkgs) == 1 && pkgs[0].Name == "main" && cfg.BuildO == "" {
 		_, cfg.BuildO = path.Split(pkgs[0].ImportPath)
 		cfg.BuildO += cfg.ExeSuffix
 	}
 
+	log.Printf("cfg.BuildContext.Compiler: %v", cfg.BuildContext.Compiler)
 	// sanity check some often mis-used options
 	switch cfg.BuildContext.Compiler {
 	case "gccgo":
