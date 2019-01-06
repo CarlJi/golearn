@@ -312,7 +312,9 @@ func TestPackagesFor(p *Package, cover *TestCover) (pmain, ptest, pxtest *Packag
 		}
 	}
 
-	log.Printf("cover结构, t.cover:%#v \n", *t.Cover)
+	if t != nil {
+		log.Printf("cover结构, t.cover:%v \n", t.Cover)
+	}
 
 	data, err := formatTestmain(t)
 	if err != nil {

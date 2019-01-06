@@ -18,8 +18,13 @@ import (
 )
 
 func BuildInit() {
+	// 如果使用go Mod, 初始化
 	load.ModInit()
+
+	//基于参数，做些初始化检查
 	instrumentInit()
+
+	//判断build方式和平台
 	buildModeInit()
 
 	// Make sure -pkgdir is absolute, because we run commands
