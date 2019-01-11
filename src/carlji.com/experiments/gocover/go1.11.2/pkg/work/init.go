@@ -10,6 +10,8 @@ import (
 	"carlji.com/experiments/gocover/go1.11.2/pkg/base"
 	"carlji.com/experiments/gocover/go1.11.2/pkg/cfg"
 	"carlji.com/experiments/gocover/go1.11.2/pkg/load"
+	"github.com/qiniu/log"
+
 	"flag"
 	"fmt"
 	"os"
@@ -85,6 +87,8 @@ func buildModeInit() {
 	gccgo := cfg.BuildToolchainName == "gccgo"
 	var codegenArg string
 	platform := cfg.Goos + "/" + cfg.Goarch
+
+	log.Printf("cfg.BuildBuildmode: %v", cfg.BuildBuildmode)
 	switch cfg.BuildBuildmode {
 	case "archive":
 		pkgsFilter = pkgsNotMain

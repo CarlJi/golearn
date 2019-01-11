@@ -452,6 +452,7 @@ func (b *Builder) LinkAction(mode, depMode BuildMode, p *load.Package) *Action {
 		}
 
 		a1 := b.CompileAction(ModeBuild, depMode, p)
+
 		a.Func = (*Builder).link
 		a.Deps = []*Action{a1}
 		a.Objdir = a1.Objdir

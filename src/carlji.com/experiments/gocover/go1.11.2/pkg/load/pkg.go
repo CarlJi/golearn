@@ -1841,6 +1841,7 @@ func PackagesAndErrors(patterns []string) []*Package {
 	}
 
 	matches := ImportPaths(patterns)
+	log.Printf("ImportPaths得到: %v", len(matches))
 
 	var (
 		pkgs    []*Package
