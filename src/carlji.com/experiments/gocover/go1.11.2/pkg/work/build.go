@@ -283,6 +283,8 @@ func runBuild(cmd *base.Command, args []string) {
 	var b Builder
 	b.Init()
 
+	log.Printf("输入的参数:%v", args)
+
 	pkgs := load.PackagesForBuild(args)
 
 	log.Printf("load.PackagesForBuild, len(pkgs):%v", len(pkgs))
