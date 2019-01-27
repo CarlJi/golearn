@@ -10,7 +10,6 @@ import (
 	"go/build"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -292,10 +291,10 @@ func runBuild(cmd *base.Command, args []string) {
 		log.Printf("加载的包为, %#v \n", *p)
 	}
 
-	if len(pkgs) == 1 && pkgs[0].Name == "main" && cfg.BuildO == "" {
-		_, cfg.BuildO = path.Split(pkgs[0].ImportPath)
-		cfg.BuildO += cfg.ExeSuffix
-	}
+	//if len(pkgs) == 1 && pkgs[0].Name == "main" && cfg.BuildO == "" {
+	//	_, cfg.BuildO = path.Split(pkgs[0].ImportPath)
+	//	cfg.BuildO += cfg.ExeSuffix
+	//}
 
 	log.Printf("cfg.BuildContext.Compiler: %v", cfg.BuildContext.Compiler)
 	// sanity check some often mis-used options
@@ -319,11 +318,17 @@ func runBuild(cmd *base.Command, args []string) {
 	}
 
 	pkgs = omitTestOnly(pkgsFilter(load.Packages(args)))
+	log.Printf("after pkgsFilter, got len(pkgs): %d", len(pkgs))
+	for _, pp := range pkgs {
+		log.Printf("pkg ==>: %#v", *pp)
+	}
 
 	// Special case -o /dev/null by not writing at all.
 	if cfg.BuildO == os.DevNull {
 		cfg.BuildO = ""
 	}
+
+	log.Printf("cfg.BuildO => %s", cfg.BuildO)
 
 	if cfg.BuildO != "" {
 		if len(pkgs) > 1 {
@@ -339,6 +344,8 @@ func runBuild(cmd *base.Command, args []string) {
 		b.Do(a)
 		return
 	}
+
+	log.Printf("depMode => %s", depMode)
 
 	a := &Action{Mode: "go build"}
 	for _, p := range pkgs {

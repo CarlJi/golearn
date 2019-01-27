@@ -253,6 +253,8 @@ func TestPackagesFor(p *Package, cover *TestCover) (pmain, ptest, pxtest *Packag
 		return nil, nil, nil, err
 	}
 
+	log.Printf("loadTestFuncs:%#v", *t)
+
 	log.Printf("pmain.GoFiles:%v", pmain.GoFiles)
 	log.Printf("pmain.ImportPath:%s", pmain.ImportPath)
 

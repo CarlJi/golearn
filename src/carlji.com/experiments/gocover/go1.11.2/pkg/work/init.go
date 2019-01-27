@@ -40,7 +40,7 @@ func BuildInit() {
 		cfg.BuildPkgdir = p
 	}
 
-	gocoverInit()
+	goCoverInit()
 }
 
 func instrumentInit() {
