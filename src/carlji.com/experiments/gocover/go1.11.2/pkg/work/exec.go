@@ -354,6 +354,7 @@ const (
 // build is the action for building a single package.
 // Note that any new influence on this logic must be reported in b.buildActionID above as well.
 func (b *Builder) build(a *Action) (err error) {
+	log.Printf("     Action: %s", a.Package.ImportPath)
 	p := a.Package
 
 	bit := func(x uint32, b bool) uint32 {
@@ -499,6 +500,8 @@ func (b *Builder) build(a *Action) (err error) {
 	// If we're doing coverage, preprocess the .go files and put them in the work directory
 	if a.Package.Internal.CoverMode != "" {
 		log.Println("===========> 开始处理覆盖率分析文件")
+		log.Printf("total的go文件, gofiles: %v, cgofiles:%v", gofiles, cgofiles)
+
 		for i, file := range str.StringList(gofiles, cgofiles) {
 			var sourceFile string
 			var coverFile string

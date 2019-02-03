@@ -607,7 +607,7 @@ func runTest(cmd *base.Command, args []string) {
 		cfg.BuildV = testV
 
 		deps := make(map[string]bool)
-		for _, dep := range load.TestMainDeps {
+		for _, dep := range load.TestMainDeps { // testmain 一定会需要import这些包
 			deps[dep] = true
 		}
 
@@ -734,6 +734,7 @@ func runTest(cmd *base.Command, args []string) {
 		}
 	}
 
+	log.Printf("before builderTest, len(pkgs):%d", len(pkgs))
 	// Prepare build + run + print actions for all packages being tested.
 	for _, p := range pkgs {
 		// sync/atomic import is inserted by the cover tool. See #18486
@@ -840,6 +841,8 @@ func builderTest(b *work.Builder, p *load.Package) (buildAction, runAction, prin
 	}
 
 	log.Printf("after load.TestPackagesFor, pmain: %#v \n", *pmain)
+	log.Printf("after load.TestPackagesFor, pmain.Internal: %#v \n", pmain.Internal)
+	log.Printf("after load.TestPackagesFor, pmain.Internal.CoverVars: %#v \n", pmain.Internal.CoverVars)
 
 	// Use last element of import path, not package name.
 	// They differ when package name is "main".

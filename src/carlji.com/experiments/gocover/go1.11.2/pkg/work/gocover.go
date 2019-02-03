@@ -25,17 +25,40 @@ func goCoverInit() {
 // except packages for system and packages in vendor
 func pkgsCoverMarkedAsNeed(pkgs []*load.Package) []*load.Package {
 	log.Printf("COVER FLAG!!")
-	newPkgs := load.PackageList(pkgs)
-	for _, p := range newPkgs {
-		// TODO: do not execute coverage analysis on Golang internal packages
-		if strings.Contains(p.ImportPath, "covs") {
+	for _, pkg := range pkgs {
+		log.Printf("add cover analysis to file: %s", pkg.ImportPath)
+		pkg.Internal.CoverMode = "count"
+		pkg.Internal.CoverVars = declareCoverVars(pkg, pkg.GoFiles...)
+		for _, p := range pkg.Internal.Imports {
+
+			log.Printf("pkg.Internal.Import imports: %s", p.ImportPath)
+			if p.Goroot || strings.Contains(p.ImportPath, "vendor/") {
+				continue
+			}
+
 			log.Printf("add cover analysis to file: %s", p.ImportPath)
 			p.Internal.CoverMode = "count"
 			p.Internal.CoverVars = declareCoverVars(p, p.GoFiles...)
+
+			if p.ImportPath == "qiniu.com/qtest/services/covs" {
+				for _, ppp := range p.Internal.Imports {
+					log.Printf("qiniu.com/qtest/services/covs imports: %s", ppp.ImportPath)
+					if strings.Contains(ppp.ImportPath, "services") {
+						ppp.Internal.CoverMode = "count"
+						ppp.Internal.CoverVars = declareCoverVars(ppp, ppp.GoFiles...)
+					}
+				}
+			}
 		}
 	}
 
-	return newPkgs
+	return pkgs
+}
+
+func filterPkgs(p *load.Package) {
+	if p.Goroot || strings.Contains(p.ImportPath, "vendor/") {
+
+	}
 }
 
 // addCoverageAnalysis automatically export two api routes in the main package in order to
