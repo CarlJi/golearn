@@ -2,3 +2,5 @@
 .idea/*
 golearn.iml
 .idea/
+bin
+pkg
