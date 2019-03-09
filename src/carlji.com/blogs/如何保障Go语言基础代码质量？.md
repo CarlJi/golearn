@@ -16,7 +16,6 @@
 此类工具在业界一般叫linter，不同的语言有不同的实现。本文主要探究Go语言相关的。
 在介绍相关工具之前，我们先看看几个经典的代码坏味道:
 ![](https://img2018.cnblogs.com/blog/293394/201903/293394-20190306232648434-1817989292.png)
-
 这段代码常规运行不会有问题，但是在一些场景下循环执行，那可能就会有问题了, 我们来看看:
 ![](https://img2018.cnblogs.com/blog/293394/201903/293394-20190306232350120-507741700.png)
 (注:ex2是上述代码编译出的可执行文件名字)
@@ -38,7 +37,7 @@ go vet 可以很容易检测出这个问题(其他vet功能，可以参考这里
 
 go的工具链中，还有一个不得不提，那就是大名鼎鼎的go fmt，其了却了其他语言经常陷入的代码风格之争，是Go语言生态构建非常巧妙的地方。另外golint也是google主推的go语言代码代码风格工具，虽非强制，但强烈建议新项目适用。
 
-## Go linters 业界现状
+## Go linters业界现状
 上面主要说到Go工具链的内置工具，还有一些非官方的工具也比较有名，比如 [staticcheck](https://staticcheck.io/docs/checks), [errcheck](https://github.com/kisielk/errcheck)在github上Star都较多。此类工具有个专门的的github库，收集的比较全，参见 [awesone-static-analysis](https://github.com/mre/awesome-static-analysis#go)
 
 同时还有些项目旨在聚合此类工具，提供更方便的使用方式，以及一些酷炫的产品化。比如[golangci-lint](https://github.com/golangci/golangci-lint), 其衍生的商业化项目，可以自动针对github PR做代码审核，对有问题的地方自动comments，比较有意思。
@@ -66,7 +65,7 @@ Kubernetes只利用了官方的几款工具, 在检测准确性上比较有保�
 我的一位老板跟我说过，要做就做Number One。而在没达到第一的时候，那就要向业界标杆看齐，比如Netflix，Google，Facebook等。当大家都非常注重自己代码质量时，工程师才有时间去关注解决更加系统性的问题，而不用一直在Low Level徘徊。笔者深以为然。
 
 
-## Contact me ?
+## Contact me?
 
 Email: jinsdu@outlook.com
 
