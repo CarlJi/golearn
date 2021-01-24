@@ -39,6 +39,8 @@ func BuildInit() {
 		}
 		cfg.BuildPkgdir = p
 	}
+
+	goCoverInit()
 }
 
 func instrumentInit() {

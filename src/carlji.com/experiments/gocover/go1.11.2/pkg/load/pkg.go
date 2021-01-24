@@ -246,6 +246,7 @@ func (p *Package) copyBuild(pp *build.Package) {
 	p.Internal.Build = pp
 
 	if pp.PkgTargetRoot != "" && cfg.BuildPkgdir != "" {
+		log.Printf("cfg.BuildPkgdir: %v", cfg.BuildPkgdir)
 		old := pp.PkgTargetRoot
 		pp.PkgRoot = cfg.BuildPkgdir
 		pp.PkgTargetRoot = cfg.BuildPkgdir
@@ -1900,7 +1901,7 @@ func PackagesForBuild(args []string) []*Package {
 	pkgs := PackagesAndErrors(args)
 	printed := map[*PackageError]bool{}
 	for _, pkg := range pkgs {
-		log.Printf("func PackagesAndErrors, pkg:%#v \n", *pkg)
+		//		log.Printf("func PackagesAndErrors, pkg:%#v \n", *pkg)
 
 		if pkg.Error != nil {
 			base.Errorf("can't load package: %s", pkg.Error)

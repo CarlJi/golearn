@@ -253,6 +253,8 @@ func TestPackagesFor(p *Package, cover *TestCover) (pmain, ptest, pxtest *Packag
 		return nil, nil, nil, err
 	}
 
+	log.Printf("loadTestFuncs:%#v", *t)
+
 	log.Printf("pmain.GoFiles:%v", pmain.GoFiles)
 	log.Printf("pmain.ImportPath:%s", pmain.ImportPath)
 
@@ -268,7 +270,7 @@ func TestPackagesFor(p *Package, cover *TestCover) (pmain, ptest, pxtest *Packag
 		t.ImportXtest = true
 	}
 
-	// Sort and d edup pmain.Imports.
+	// Sort and dedup pmain.Imports.
 	// Only matters for go list -test output.
 	sort.Strings(pmain.Imports)
 	w := 0
